@@ -1,4 +1,4 @@
-# 赤い糸 · a beautiful thread
+# 赤い糸 · a beautiful thread 
 
 A ninety-second audiovisual piece made only of characters. Every frame is a grid of
 glyphs over one unchanging background colour, and every sound is synthesized in the
