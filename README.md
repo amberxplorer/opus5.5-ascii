@@ -54,6 +54,8 @@ then click, tap or press Enter. Headphones help.
   `spectrogram.png`, and prints levels per section and per instrument.
 - `node tools/shoot.mjs <dir> 1280x720 12.5,33,80` captures frames headlessly
   (`sheet:` in front of the times makes a contact sheet).
+- `node tools/video.mjs out.mp4 track.wav 720x1280 30 6` renders an MP4 frame by frame
+  (1 s of the play screen, then the whole piece), muxed with the WAV from `tools/audio.mjs`.
 - `node tools/play.mjs <seconds> [startAt]` plays the page for real in headless Chromium
   and reports the clock, frame rate and any console errors.
 

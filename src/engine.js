@@ -45,6 +45,7 @@ let layer = null, lctx = null;
 let ovG = null, ovC = null;
 let bg = [8, 7, 14];
 let capture = false;
+let cellOverride = 0;  // capture-only: fixed cell width in CSS px
 
 /* ───────── GL helpers ───────── */
 const VERT = `#version 300 es
@@ -503,7 +504,7 @@ function buildAtlas() {
 function layout() {
   const W = document.body.clientWidth || window.innerWidth, H = document.body.clientHeight || window.innerHeight;
   dpr = Math.min(window.devicePixelRatio || 1, 2.5);
-  const cssCell = Math.max(5, Math.min(13, W / 170, H / 40));
+  const cssCell = cellOverride || Math.max(5, Math.min(13, W / 170, H / 40));
   const ncw = Math.max(4, Math.round(cssCell * dpr));
   const nch = ncw * 2;
   const ncols = Math.max(20, Math.floor(W * dpr / ncw));
@@ -540,6 +541,7 @@ function layout() {
 async function init(opts) {
   canvas = opts.canvas;
   capture = !!opts.capture;
+  cellOverride = opts.cell || 0;
   bg = opts.bg || bg;
   gl = canvas.getContext('webgl2', { alpha: false, antialias: false, depth: false, stencil: false, premultipliedAlpha: false, preserveDrawingBuffer: capture, powerPreference: 'high-performance' });
   if (!gl) throw new Error('WebGL2 unavailable');
