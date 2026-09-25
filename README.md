@@ -1,4 +1,6 @@
-# 赤い糸 · a beautiful thread 
+# 赤い糸 · a beautiful thread
+
+## [▶ Play the live demo](https://amberxplorer.github.io/opus5.5-ascii/)
 
 A ninety-second audiovisual piece made only of characters. Every frame is a grid of
 glyphs over one unchanging background colour, and every sound is synthesized in the
