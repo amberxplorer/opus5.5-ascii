@@ -36,7 +36,7 @@ if (fontDir && fs.existsSync(path.join(fontDir, 'map.txt'))) {
   await page.route(/fonts\.(googleapis|gstatic)\.com/, (r) => r.abort());
 }
 const t0 = Date.now();
-await page.goto('file://' + path.join(here, '../index.html') + '?capture');
+await page.goto('file://' + path.join(here, '../index.html') + '?capture' + (process.env.Q ? '&' + process.env.Q : ''));
 await page.waitForFunction(() => window.__ready === true, null, { timeout: 180000 });
 console.log('ready in', ((Date.now() - t0) / 1000).toFixed(1), 's');
 if (sheet) {

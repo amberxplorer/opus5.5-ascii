@@ -242,7 +242,7 @@ function frame() {
   const [tf, cjk] = pickTitleFont();
   SCENES.setTitleFont(tf, cjk);
   try {
-    await ENGINE.init({ canvas, bg: BG, fontFamily: MONO, fontWeight: 700, capture: CAPTURE });
+    await ENGINE.init({ canvas, bg: BG, fontFamily: MONO, fontWeight: 700, capture: CAPTURE, cell: CAPTURE ? parseFloat(params.get('cell')) || 0 : 0 });
     SCENES.compileAll();
   } catch (err) {
     console.error(err);
