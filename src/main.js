@@ -11,6 +11,9 @@ const START_AT = Math.max(0, Math.min(89, parseFloat(params.get('t') || '0') || 
 const canvas = document.getElementById('screen');
 const F = {};
 const MONO = '"JetBrains Mono", "DejaVu Sans Mono", Menlo, Consolas, "Liberation Mono", monospace';
+// for viewers who ask for less motion: keep the piece, drop the shakes, glitches and flashes
+const calm = () => { try { return matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { return false; } };
+function soften(F) { if (!calm()) return; F.shake = null; F.glitch = 0; F.chroma = 0; F.flash *= 0.25; F.scramble *= 0.3; }
 
 let music = null, progress = 0, ready = false, pendingStart = false;
 let actx = null, buffer = null, source = null;
@@ -221,6 +224,7 @@ function frame() {
     } else {
       setEnv(Math.min(T, DURATION));
       SCENES.frame(T, F);
+      soften(F);
       ENGINE.render(F);
       document.body.classList.toggle('hide', tw - lastMove > 1.5);
       return;

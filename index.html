@@ -13,9 +13,10 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@700&display=block">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@800&text=%E8%B5%A4%E3%81%84%E7%B3%B8&display=block">
 <style>
-:root { --bg: #08070e; }
-html, body { margin: 0; width: 100%; height: 100%; background: var(--bg); overflow: hidden; }
+:root { --bg: #08070e; --accent: #ff3a60; color-scheme: dark; }
+html { height: 100%; box-sizing: border-box; background: var(--bg); overflow: hidden; }
 body {
+  margin: 0; height: 100%; background: var(--bg); overflow: hidden;
   display: flex; align-items: center; justify-content: center;
   cursor: default; user-select: none; -webkit-user-select: none;
   -webkit-tap-highlight-color: transparent; touch-action: manipulation;
@@ -23,7 +24,7 @@ body {
 body.play { cursor: pointer; }
 body.hide { cursor: none; }
 canvas { display: block; background: var(--bg); }
-body.nogl::after { content: "\00d7"; color: #ff3a60; font: 700 40px/1 monospace; }
+body.nogl::after { content: "\00d7"; color: var(--accent); font: 700 40px/1 monospace; }
 </style>
 </head>
 <body>
@@ -379,6 +380,8 @@ function* renderGen(opts) {
 
   /* ---------- one-shot samples ---------- */
   const mk = (sec) => new Float32Array(Math.round(sec * SR));
+  // every one-shot ends on a short fade so nothing stops on a step
+  const tail = (x, ms) => { const n = Math.min(x.length, Math.round((ms || 12) * SR / 1000)); for (let i = 0; i < n; i++) x[x.length - 1 - i] *= i / n; return x; };
 
   function makeKick(click) {
     const x = mk(0.42);
@@ -395,8 +398,8 @@ function* renderGen(opts) {
     }
     return x;
   }
-  const kickFull = makeKick(1);
-  const kickMuf = svfArray(svfArray(makeKick(0), 260, 0.7, 0), 260, 0.7, 0);
+  const kickFull = tail(makeKick(1));
+  const kickMuf = tail(svfArray(svfArray(makeKick(0), 260, 0.7, 0), 260, 0.7, 0));
 
   function makeClap() {
     const n = Math.round(0.42 * SR);
@@ -420,7 +423,7 @@ function* renderGen(opts) {
     }
     return out;
   }
-  const clapS = makeClap();
+  const clapS = makeClap().map((x) => tail(x, 30));
 
   function makeSnare() {
     const n = Math.round(0.3 * SR);
@@ -436,7 +439,7 @@ function* renderGen(opts) {
     }
     return x;
   }
-  const snareS = makeSnare();
+  const snareS = tail(makeSnare(), 30);
 
   function makeMetal(len, decay, hpf) {
     const n = Math.round(len * SR);
@@ -468,7 +471,7 @@ function* renderGen(opts) {
     }
     return x;
   }
-  const rimS = makeRim();
+  const rimS = tail(makeRim());
 
   function makeCrash() {
     const n = Math.round(3.2 * SR);
@@ -534,7 +537,7 @@ function* renderGen(opts) {
     }
     return svfArray(x, 180, 0.7, 0);
   }
-  const heartS = makeHeart();
+  const heartS = tail(makeHeart(), 30);
 
   /* ---------- automation ---------- */
   function padCut(t) {
@@ -929,7 +932,7 @@ function* renderGen(opts) {
       const x = local / total;
       if ((local & 31) === 0 || k === 0) {
         let fc, q;
-        if (mode === 'riser') { fc = 220 * Math.pow(38, x * x * 0.3 + x * 0.7); q = 2.2; gain = x * x * 0.9; }
+        if (mode === 'riser') { fc = 220 * Math.pow(38, x * x * 0.3 + x * 0.7); q = 2.2; gain = x * x * 0.9 * Math.min(1, (total - local) / (0.015 * SR)); }
         else if (mode === 'down') { fc = 5000 * Math.pow(0.03, Math.sqrt(x)); q = 1.6; gain = Math.pow(1 - x, 2) * 0.7; }
         else if (mode === 'whoosh') { fc = 300 * Math.pow(22, x); q = 0.9; gain = Math.pow(x, 2.5) * Math.min(1, (1 - x) * 25); }
         else if (mode === 'wind') { fc = 450 + 350 * fsin(lfo) + 150 * fsin(lfo * 2.7); q = 1.4; gain = 0.16 * Math.min(1, x * 5, (1 - x) * 3) * (0.7 + 0.3 * fsin(lfo * 1.9)); }
@@ -1784,7 +1787,7 @@ function buildAtlas() {
 
 /* ───────── layout ───────── */
 function layout() {
-  const W = window.innerWidth, H = window.innerHeight;
+  const W = document.body.clientWidth || window.innerWidth, H = document.body.clientHeight || window.innerHeight;
   dpr = Math.min(window.devicePixelRatio || 1, 2.5);
   const cssCell = Math.max(5, Math.min(13, W / 170, H / 40));
   const ncw = Math.max(4, Math.round(cssCell * dpr));
@@ -2882,18 +2885,19 @@ function galaxy(T, t0, fade, prio) {
 }
 function nebulaParams(T, t0, fade) {
   const tau = T - t0;
-  const burst = (1 + 1.6 * Math.exp(-tau / 0.45)) * (1 - Math.exp(-tau / 0.06)) * E.fit;
+  const burst = (1 + 1.6 * Math.exp(-tau / 0.45)) * (1 - Math.exp(-tau / 0.06));
   return [[tau, 0.25 * Math.sin(T * 0.13), fade, (ENV || NOENV).kick], [0.6, 1.4, burst, 0]];
 }
 function mandalaParams(T, t0, style) {
   const e = ENV || NOENV;
   const grow = style === 'montage' ? 1 : easeOut((T - t0) / BAR) * 1.0;
-  return [[grow * E.fit * 0.95, T * 0.35, e.kick, 0.02 * T + (style === 'montage' ? 0.3 : 0)], [1, 0, 0, 0]];
+  return [[grow * 0.95, T * 0.35, e.kick, 0.02 * T + (style === 'montage' ? 0.3 : 0)], [1, 0, 0, 0]];
 }
 function metaParams(T, merge) {
   const e = ENV || NOENV;
-  const k = E.fit;
-  return [[T * 0.9, merge, e.kick, T * 0.03], [-0.64 * k, -0.2 * k, 0.2 * k, -0.33 * k], [1, 0, 0, 0]];
+  // the two blobs settle where the two figures of the last scene will sit
+  const H = HOME;
+  return [[T * 0.9, merge, e.kick, T * 0.03], [H.girl * H.S, H.ridge + 0.42 * H.S, H.cat * H.S, H.ridge + 0.17 * H.S], [1, 0, 0, 0]];
 }
 function tunnelMontage(T) {
   const P = weaveParams(TB(20, 8));
@@ -3105,7 +3109,7 @@ function sceneHome(T, F) {
   const b = T / BAR;
   const { k, notch, moon } = homeGeom();
   F.A = 'sky';
-  F.pA = [[moon[0], moon[1], 0.2 * k, 0.9], [0.55, 0, 0, 1]];
+  F.pA = [[moon[0] / k, moon[1] / k, 0.2, 0.9], [0.55, 0, 0, 1]];
   F.flat = 0.07;
   F.contrast = 1.5;
   drawHome(E.beginLayer(), T);
@@ -3144,7 +3148,17 @@ function sceneHome(T, F) {
     const hb = S ? pulseOf(S.heart.map((x) => x[0]), T, 0.18) : 0;
     const out = 1 - smooth(TB(47, 10), DURATION - 0.15, T);
     const c = mixc(C.red, C.gold, 0.25 + 0.5 * hb);
-    plot(notch[0], notch[1] + 0.012 * k, '●', mulc(c, (0.75 + 0.35 * hb) * out * sat((T - TB(46)) / 1.2)), 255);
+    const bx = notch[0], by = notch[1] + 0.012 * k;
+    plot(bx, by, '●', mulc(c, (0.75 + 0.35 * hb) * out * sat((T - TB(46)) / 1.2)), 255);
+    // once it is alone, it breathes with the heartbeat
+    const halo = (0.3 + 0.7 * hb) * out * smooth(TB(46, 14), TB(47, 2), T);
+    if (halo > 0.03) {
+      const cc = E.colOf(bx), rr = E.rowOf(by);
+      const hc = mulc(mixc(C.red, C.rose, 0.5), halo * 0.8);
+      for (const [dc, dr, ch] of [[-1, 0, '·'], [1, 0, '·'], [0, -1, '.'], [0, 1, '˙'], [-2, 0, '.'], [2, 0, '.']]) {
+        E.put(cc + dc, rr + dr, G[ch], hc[0] * (Math.abs(dc) > 1 ? 0.6 : 1), hc[1] * (Math.abs(dc) > 1 ? 0.6 : 1), hc[2] * (Math.abs(dc) > 1 ? 0.6 : 1), 255);
+      }
+    }
   }
 }
 const DURATION = 90;
@@ -3183,6 +3197,9 @@ const START_AT = Math.max(0, Math.min(89, parseFloat(params.get('t') || '0') || 
 const canvas = document.getElementById('screen');
 const F = {};
 const MONO = '"JetBrains Mono", "DejaVu Sans Mono", Menlo, Consolas, "Liberation Mono", monospace';
+// for viewers who ask for less motion: keep the piece, drop the shakes, glitches and flashes
+const calm = () => { try { return matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { return false; } };
+function soften(F) { if (!calm()) return; F.shake = null; F.glitch = 0; F.chroma = 0; F.flash *= 0.25; F.scramble *= 0.3; }
 
 let music = null, progress = 0, ready = false, pendingStart = false;
 let actx = null, buffer = null, source = null;
@@ -3393,6 +3410,7 @@ function frame() {
     } else {
       setEnv(Math.min(T, DURATION));
       SCENES.frame(T, F);
+      soften(F);
       ENGINE.render(F);
       document.body.classList.toggle('hide', tw - lastMove > 1.5);
       return;

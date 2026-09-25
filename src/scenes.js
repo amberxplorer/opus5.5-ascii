@@ -884,18 +884,19 @@ function galaxy(T, t0, fade, prio) {
 }
 function nebulaParams(T, t0, fade) {
   const tau = T - t0;
-  const burst = (1 + 1.6 * Math.exp(-tau / 0.45)) * (1 - Math.exp(-tau / 0.06)) * E.fit;
+  const burst = (1 + 1.6 * Math.exp(-tau / 0.45)) * (1 - Math.exp(-tau / 0.06));
   return [[tau, 0.25 * Math.sin(T * 0.13), fade, (ENV || NOENV).kick], [0.6, 1.4, burst, 0]];
 }
 function mandalaParams(T, t0, style) {
   const e = ENV || NOENV;
   const grow = style === 'montage' ? 1 : easeOut((T - t0) / BAR) * 1.0;
-  return [[grow * E.fit * 0.95, T * 0.35, e.kick, 0.02 * T + (style === 'montage' ? 0.3 : 0)], [1, 0, 0, 0]];
+  return [[grow * 0.95, T * 0.35, e.kick, 0.02 * T + (style === 'montage' ? 0.3 : 0)], [1, 0, 0, 0]];
 }
 function metaParams(T, merge) {
   const e = ENV || NOENV;
-  const k = E.fit;
-  return [[T * 0.9, merge, e.kick, T * 0.03], [-0.64 * k, -0.2 * k, 0.2 * k, -0.33 * k], [1, 0, 0, 0]];
+  // the two blobs settle where the two figures of the last scene will sit
+  const H = HOME;
+  return [[T * 0.9, merge, e.kick, T * 0.03], [H.girl * H.S, H.ridge + 0.42 * H.S, H.cat * H.S, H.ridge + 0.17 * H.S], [1, 0, 0, 0]];
 }
 function tunnelMontage(T) {
   const P = weaveParams(TB(20, 8));
@@ -1107,7 +1108,7 @@ function sceneHome(T, F) {
   const b = T / BAR;
   const { k, notch, moon } = homeGeom();
   F.A = 'sky';
-  F.pA = [[moon[0], moon[1], 0.2 * k, 0.9], [0.55, 0, 0, 1]];
+  F.pA = [[moon[0] / k, moon[1] / k, 0.2, 0.9], [0.55, 0, 0, 1]];
   F.flat = 0.07;
   F.contrast = 1.5;
   drawHome(E.beginLayer(), T);
@@ -1146,7 +1147,17 @@ function sceneHome(T, F) {
     const hb = S ? pulseOf(S.heart.map((x) => x[0]), T, 0.18) : 0;
     const out = 1 - smooth(TB(47, 10), DURATION - 0.15, T);
     const c = mixc(C.red, C.gold, 0.25 + 0.5 * hb);
-    plot(notch[0], notch[1] + 0.012 * k, '●', mulc(c, (0.75 + 0.35 * hb) * out * sat((T - TB(46)) / 1.2)), 255);
+    const bx = notch[0], by = notch[1] + 0.012 * k;
+    plot(bx, by, '●', mulc(c, (0.75 + 0.35 * hb) * out * sat((T - TB(46)) / 1.2)), 255);
+    // once it is alone, it breathes with the heartbeat
+    const halo = (0.3 + 0.7 * hb) * out * smooth(TB(46, 14), TB(47, 2), T);
+    if (halo > 0.03) {
+      const cc = E.colOf(bx), rr = E.rowOf(by);
+      const hc = mulc(mixc(C.red, C.rose, 0.5), halo * 0.8);
+      for (const [dc, dr, ch] of [[-1, 0, '·'], [1, 0, '·'], [0, -1, '.'], [0, 1, '˙'], [-2, 0, '.'], [2, 0, '.']]) {
+        E.put(cc + dc, rr + dr, G[ch], hc[0] * (Math.abs(dc) > 1 ? 0.6 : 1), hc[1] * (Math.abs(dc) > 1 ? 0.6 : 1), hc[2] * (Math.abs(dc) > 1 ? 0.6 : 1), 255);
+      }
+    }
   }
 }
 const DURATION = 90;

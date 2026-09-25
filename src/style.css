@@ -1,6 +1,7 @@
-:root { --bg: #08070e; }
-html, body { margin: 0; width: 100%; height: 100%; background: var(--bg); overflow: hidden; }
+:root { --bg: #08070e; --accent: #ff3a60; color-scheme: dark; }
+html { height: 100%; box-sizing: border-box; background: var(--bg); overflow: hidden; }
 body {
+  margin: 0; height: 100%; background: var(--bg); overflow: hidden;
   display: flex; align-items: center; justify-content: center;
   cursor: default; user-select: none; -webkit-user-select: none;
   -webkit-tap-highlight-color: transparent; touch-action: manipulation;
@@ -8,4 +9,4 @@ body {
 body.play { cursor: pointer; }
 body.hide { cursor: none; }
 canvas { display: block; background: var(--bg); }
-body.nogl::after { content: "\00d7"; color: #ff3a60; font: 700 40px/1 monospace; }
+body.nogl::after { content: "\00d7"; color: var(--accent); font: 700 40px/1 monospace; }

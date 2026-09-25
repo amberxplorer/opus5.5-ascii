@@ -501,7 +501,7 @@ function buildAtlas() {
 
 /* ───────── layout ───────── */
 function layout() {
-  const W = window.innerWidth, H = window.innerHeight;
+  const W = document.body.clientWidth || window.innerWidth, H = document.body.clientHeight || window.innerHeight;
   dpr = Math.min(window.devicePixelRatio || 1, 2.5);
   const cssCell = Math.max(5, Math.min(13, W / 170, H / 40));
   const ncw = Math.max(4, Math.round(cssCell * dpr));

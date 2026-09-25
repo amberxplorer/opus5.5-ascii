@@ -348,6 +348,8 @@ function* renderGen(opts) {
 
   /* ---------- one-shot samples ---------- */
   const mk = (sec) => new Float32Array(Math.round(sec * SR));
+  // every one-shot ends on a short fade so nothing stops on a step
+  const tail = (x, ms) => { const n = Math.min(x.length, Math.round((ms || 12) * SR / 1000)); for (let i = 0; i < n; i++) x[x.length - 1 - i] *= i / n; return x; };
 
   function makeKick(click) {
     const x = mk(0.42);
@@ -364,8 +366,8 @@ function* renderGen(opts) {
     }
     return x;
   }
-  const kickFull = makeKick(1);
-  const kickMuf = svfArray(svfArray(makeKick(0), 260, 0.7, 0), 260, 0.7, 0);
+  const kickFull = tail(makeKick(1));
+  const kickMuf = tail(svfArray(svfArray(makeKick(0), 260, 0.7, 0), 260, 0.7, 0));
 
   function makeClap() {
     const n = Math.round(0.42 * SR);
@@ -389,7 +391,7 @@ function* renderGen(opts) {
     }
     return out;
   }
-  const clapS = makeClap();
+  const clapS = makeClap().map((x) => tail(x, 30));
 
   function makeSnare() {
     const n = Math.round(0.3 * SR);
@@ -405,7 +407,7 @@ function* renderGen(opts) {
     }
     return x;
   }
-  const snareS = makeSnare();
+  const snareS = tail(makeSnare(), 30);
 
   function makeMetal(len, decay, hpf) {
     const n = Math.round(len * SR);
@@ -437,7 +439,7 @@ function* renderGen(opts) {
     }
     return x;
   }
-  const rimS = makeRim();
+  const rimS = tail(makeRim());
 
   function makeCrash() {
     const n = Math.round(3.2 * SR);
@@ -503,7 +505,7 @@ function* renderGen(opts) {
     }
     return svfArray(x, 180, 0.7, 0);
   }
-  const heartS = makeHeart();
+  const heartS = tail(makeHeart(), 30);
 
   /* ---------- automation ---------- */
   function padCut(t) {
@@ -898,7 +900,7 @@ function* renderGen(opts) {
       const x = local / total;
       if ((local & 31) === 0 || k === 0) {
         let fc, q;
-        if (mode === 'riser') { fc = 220 * Math.pow(38, x * x * 0.3 + x * 0.7); q = 2.2; gain = x * x * 0.9; }
+        if (mode === 'riser') { fc = 220 * Math.pow(38, x * x * 0.3 + x * 0.7); q = 2.2; gain = x * x * 0.9 * Math.min(1, (total - local) / (0.015 * SR)); }
         else if (mode === 'down') { fc = 5000 * Math.pow(0.03, Math.sqrt(x)); q = 1.6; gain = Math.pow(1 - x, 2) * 0.7; }
         else if (mode === 'whoosh') { fc = 300 * Math.pow(22, x); q = 0.9; gain = Math.pow(x, 2.5) * Math.min(1, (1 - x) * 25); }
         else if (mode === 'wind') { fc = 450 + 350 * fsin(lfo) + 150 * fsin(lfo * 2.7); q = 1.4; gain = 0.16 * Math.min(1, x * 5, (1 - x) * 3) * (0.7 + 0.3 * fsin(lfo * 1.9)); }
