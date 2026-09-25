@@ -173,7 +173,8 @@ function buildScore() {
   for (let b = 40; b < 44; b++) S.bass.push({ t: T(b), dur: 15.5 * STEP, note: chordAt(b, 0).root, vel: 0.5, sub: true });
   S.bass.push({ t: T(44), dur: 7.5 * STEP, note: 33, vel: 0.5, sub: true });
   S.bass.push({ t: T(44, 8), dur: 7.5 * STEP, note: 35, vel: 0.5, sub: true });
-  S.bass.push({ t: T(45), dur: 2.6 * BAR, note: 28, vel: 0.6, sub: true });
+  S.bass.push({ t: T(45), dur: 2.6 * BAR, note: 28, vel: 0.36, sub: true });
+  S.bass.push({ t: T(45), dur: 2.6 * BAR, note: 40, vel: 0.3, sub: true });
 
   /* drums */
   const hum = (amt) => (R() - 0.5) * amt;
@@ -1126,6 +1127,19 @@ function* renderGen(opts) {
       for (let i = 0; i < N; i++) {
         const y = (b0 * x[i] + b1 * x1 + b2 * x2 - a1 * y1 - a2 * y2) / a0;
         x2 = x1; x1 = x[i]; y2 = y1; y1 = y; x[i] = y;
+      }
+    }
+    // a little air: +2.5 dB high shelf at 5 kHz (RBJ, S = 1)
+    {
+      const A = Math.pow(10, 2.5 / 40), w = TAU * 5000 / SR, c = Math.cos(w), al = Math.sin(w) / 2 * Math.SQRT2, sq = 2 * Math.sqrt(A) * al;
+      const b0 = A * ((A + 1) + (A - 1) * c + sq), b1 = -2 * A * ((A - 1) + (A + 1) * c), b2 = A * ((A + 1) + (A - 1) * c - sq);
+      const a0 = (A + 1) - (A - 1) * c + sq, a1 = 2 * ((A - 1) - (A + 1) * c), a2 = (A + 1) - (A - 1) * c - sq;
+      for (const x of [outL, outR]) {
+        let x1 = 0, x2 = 0, y1 = 0, y2 = 0;
+        for (let i = 0; i < N; i++) {
+          const y = (b0 * x[i] + b1 * x1 + b2 * x2 - a1 * y1 - a2 * y2) / a0;
+          x2 = x1; x1 = x[i]; y2 = y1; y1 = y; x[i] = y;
+        }
       }
     }
     // glue compressor (stereo linked)
